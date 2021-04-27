@@ -1,0 +1,90 @@
+class KMeans():
+    def __init__(self,DataSet,K):
+        self.k = K
+        self.DataSet = DataSet
+    def distEclud(self,x, y):
+        return np.sqrt(np.sum((x - y) ** 2))
+
+    # 为给定数据集构建一个包含K个随机质心的集合
+    def randCent(self):
+        dataSet = self.DataSet
+        # 获取样本数与特征值
+        m, n = dataSet.shape  # 把数据集的行数和列数赋值给m,n
+        # 初始化质心,创建(k,n)个以零填充的矩阵
+        centroids = np.zeros((self.k, n))
+        # 循环遍历特征值
+        for i in range(self.k):
+            index = int(np.random.uniform(0, m))
+            # 计算每一列的质心,并将值赋给centroids
+            centroids[i, :] = dataSet[index, :]
+            # 返回质心
+        return centroids
+
+    def kmeans(self):
+        dataSet = self.DataSet
+        m = np.shape(dataSet)[0]
+        # 初始化一个矩阵来存储每个点的簇分配结果
+        # clusterAssment包含两个列:一列记录簇索引值,第二列存储误差(误差是指当前点到簇质心的距离,后面会使用该误差来评价聚类的效果)
+        clusterAssment = np.mat(np.zeros((m, 2)))
+        clusterChange = True
+        # 创建质心,随机K个质心
+        centroids = self.randCent()
+        # 初始化标志变量,用于判断迭代是否继续,如果True,则继续迭代
+        while clusterChange:
+            clusterChange = False
+            pre_centroids = centroids
+            # 遍历所有样本（行数）
+            for i in range(m):
+                minDist = float('inf')
+                minIndex = -1
+                # 遍历所有数据找到距离每个点最近的质心,
+                # 可以通过对每个点遍历所有质心并计算点到每个质心的距离来完成
+                for j in range(len(centroids)):
+                    # 计算数据点到质心的距离
+                    # 计算距离是使用distMeas参数给出的距离公式,默认距离函数是distEclud
+                    distance = self.distEclud(centroids[j], dataSet[i, :])
+                    # 如果距离比minDist(最小距离)还小,更新minDist(最小距离)和最小质心的index(索引)
+                    if distance < minDist:
+                        minDist = distance
+                        minIndex = j
+                if clusterAssment[i, 0] != minIndex:
+                    clusterChange = True
+                    clusterAssment[i, :] = minIndex, minDist
+
+            # 遍历所有质心并更新它们的取值
+            for j in range(len(centroids)):
+                # 通过数据过滤来获得给定簇的所有点
+                pointsInCluster = dataSet[np.nonzero(clusterAssment[:, 0].A == j)[0]]
+                # 计算所有点的均值,axis=0表示沿矩阵的列方向进行均值计算
+                centroids[j] = np.average(pointsInCluster, axis=0)
+        print("Congratulation,cluster complete!")
+        # 返回所有的类质心与点分配结果
+        self.showCluster(self.DataSet,centroids=centroids,clusterAssment=clusterAssment)
+        return centroids, clusterAssment
+
+    def showCluster(self,dataSet,centroids,clusterAssment):
+        # dataSet = self.DataSet
+        # centroids,clusterAssment = self.kmeans()
+        m, n = dataSet.shape
+        colors = ['blue','brown', 'green',  'y', 'r', 'tan', 'dodgerblue', 'deeppink', 'orangered', 'peru', 'blue', 'y',
+                  'r',
+                  'gold', 'dimgray', 'darkorange', 'peru', 'blue', 'y', 'r', 'cyan', 'tan', 'orchid', 'peru', 'blue',
+                  'y',
+                  'r', 'sienna']
+        markers = ['*', 'h', 'H', '+', 'o', '1', '2', '3', ',', 'v', 'H', '+', '1', '2', '^',
+                   '&lt;', '&gt;', '.', '4', 'H', '+', '1', '2', 's', 'p', 'x', 'D', 'd', '|', '_']
+
+        mark = ['v', 'H', '+', '1', '2', '^']
+        if self.k > len(mark):
+            print("k值太大了")
+            return 1
+        # 绘制所有样本
+        for i in range(m):
+            markIndex = int(clusterAssment[i, 0])
+            plt.plot(dataSet[i, 0], dataSet[i, 1], marker=markers[markIndex], color=colors[markIndex])
+
+        # 绘制质心
+        for i in range(len(centroids)):
+            plt.plot(centroids[i][0], centroids[i][1], marker='*')
+
+        plt.show()
